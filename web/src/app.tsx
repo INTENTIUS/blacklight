@@ -1,9 +1,17 @@
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import type { Report } from "./types";
 import { ReportView } from "./report";
 
-const API = (import.meta as { env?: { VITE_API_BASE?: string } }).env?.VITE_API_BASE ?? "";
+const env = (import.meta as { env?: { VITE_API_BASE?: string; VITE_TURNSTILE_SITEKEY?: string } }).env ?? {};
+const API = env.VITE_API_BASE ?? "";
+const TURNSTILE_SITEKEY = env.VITE_TURNSTILE_SITEKEY ?? "";
 const SAMPLES = ["https://github.com/actions/checkout", "https://github.com/hashicorp/terraform"];
+
+declare global {
+  interface Window {
+    turnstile?: { getResponse: () => string | undefined };
+  }
+}
 
 type State =
   | { kind: "idle" }
@@ -15,16 +23,28 @@ export function App() {
   const [url, setUrl] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
 
+  // Load the Turnstile widget only when a sitekey is configured (prod). Dev /
+  // fixture / E2E have none, so this is a no-op and the gate is skipped.
+  useEffect(() => {
+    if (!TURNSTILE_SITEKEY || document.getElementById("cf-turnstile-script")) return;
+    const s = document.createElement("script");
+    s.id = "cf-turnstile-script";
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    s.async = true;
+    document.head.appendChild(s);
+  }, []);
+
   async function run(target: string) {
     const u = target.trim();
     if (!u) return;
     setUrl(u);
     setState({ kind: "scanning", url: u });
     try {
+      const turnstileToken = TURNSTILE_SITEKEY ? window.turnstile?.getResponse() : undefined;
       const res = await fetch(`${API}/audit`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: u }),
+        body: JSON.stringify({ url: u, turnstileToken }),
       });
       const body = await res.json();
       if (!res.ok) {
@@ -62,6 +82,8 @@ export function App() {
           {state.kind === "scanning" ? "scanning…" : "audit"}
         </button>
       </form>
+
+      {TURNSTILE_SITEKEY && <div class="cf-turnstile" data-sitekey={TURNSTILE_SITEKEY} style="margin-top:12px" />}
 
       <p class="trust">read-only · we never store your code · audits CI, IaC &amp; manifests · fetches from github, gitlab &amp; codeberg</p>
 

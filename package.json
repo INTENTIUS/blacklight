@@ -10,7 +10,8 @@
     "deploy": "wrangler deploy",
     "tsc": "tsc --noEmit",
     "e2e": "bash e2e/run.sh",
-    "preview:fixture": "(npx wrangler dev --var BLACKLIGHT_FIXTURE:1 --port 8787 --local &) && npm --prefix web run dev -- --port 5173"
+    "preview:fixture": "(npx wrangler dev --var BLACKLIGHT_FIXTURE:1 --port 8787 --local &) && npm --prefix web run dev -- --port 5173",
+    "test": "vitest run"
   },
   "dependencies": {
     "@intentius/chant": "file:/Users/alex/Documents/checkouts/intentius/chant/packages/core",
@@ -28,6 +29,7 @@
     "@cloudflare/workers-types": "^4.20260617.1",
     "@types/node": "^25.9.3",
     "typescript": "^5.6.0",
+    "vitest": "^4.1.9",
     "wrangler": "^4"
   }
 }

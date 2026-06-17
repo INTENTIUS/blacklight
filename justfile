@@ -37,8 +37,9 @@ bundle:
 tsc:
     npm --prefix web run tsc
 
-# Unit / render tests (SPA).
+# Unit tests — worker (limit/turnstile/ssrf) + SPA (render).
 test:
+    npm test
     npm --prefix web test
 
 # Build the static SPA.

@@ -16,6 +16,8 @@ import { classifyFiles, type DetectPlugin } from "@intentius/chant/audit/discove
 import { auditFiles, type AuditLexicon } from "@intentius/chant/audit/core";
 import { buildReportModel } from "@intentius/chant/audit/report-model";
 import type { PostSynthCheck } from "@intentius/chant/lint/post-synth";
+import { checkLimits } from "./limit";
+import { verifyTurnstile } from "./turnstile";
 
 import { detectTemplate as detectK8s } from "@intentius/chant-lexicon-k8s/detect";
 import { detectTemplate as detectDocker } from "@intentius/chant-lexicon-docker/detect";
@@ -66,20 +68,22 @@ const checksProvider = async (lexicon: AuditLexicon): Promise<PostSynthCheck[]> 
 interface Env {
   /** Server-side git token (secret). */
   GIT_TOKEN?: string;
-  /** Anonymous audit counter — wired in #357. */
+  /** Anonymous audit counter + rate-limit windows (KV). Rate limiting is on when bound. */
   STATS?: KVNamespace;
+  /** Turnstile secret — when set, every audit requires a valid challenge token. */
+  TURNSTILE_SECRET?: string;
   /** Test-only: "1" serves a baked fixture repo (hermetic E2E, no network). */
   BLACKLIGHT_FIXTURE?: string;
 }
 
 const CORS = {
-  "access-control-allow-origin": "*", // TODO(#357): lock to the Pages origin
+  "access-control-allow-origin": "*", // TODO: lock to the Pages origin once the domain is wired
   "access-control-allow-methods": "POST, GET, OPTIONS",
   "access-control-allow-headers": "content-type",
 };
 
-const json = (body: unknown, status = 200): Response =>
-  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...CORS } });
+const json = (body: unknown, status = 200, extra: Record<string, string> = {}): Response =>
+  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...CORS, ...extra } });
 
 /** Best-effort anonymous tally — no repo identity, ever. Real impl lands with #357. */
 async function bumpCount(env: Env): Promise<void> {
@@ -102,12 +106,35 @@ export default {
     if (req.method !== "POST" || url.pathname !== "/audit") return json({ error: "Not found" }, 404);
 
     let target: string;
+    let turnstileToken: string | undefined;
     try {
-      target = (await req.json<{ url?: string }>()).url ?? "";
+      const body = await req.json<{ url?: string; turnstileToken?: string }>();
+      target = body.url ?? "";
+      turnstileToken = body.turnstileToken;
     } catch {
       return json({ error: "Body must be JSON: { \"url\": \"https://…\" }" }, 400);
     }
     if (!target) return json({ error: "Missing url" }, 400);
+
+    const ip = req.headers.get("cf-connecting-ip") ?? "unknown";
+
+    // Bot/abuse gate — only enforced when a secret is configured (dev/fixture stay open).
+    if (env.TURNSTILE_SECRET) {
+      const ok = await verifyTurnstile(env.TURNSTILE_SECRET, turnstileToken, ip);
+      if (!ok) {
+        console.warn(`reject reason=turnstile ip=${ip}`);
+        return json({ error: "Verification required." }, 403);
+      }
+    }
+
+    // Per-IP + global rate limiting — only when a KV store is bound.
+    if (env.STATS) {
+      const rl = await checkLimits(env.STATS, ip, Date.now());
+      if (!rl.ok) {
+        console.warn(`reject reason=rate:${rl.reason} ip=${ip}`);
+        return json({ error: "Rate limit exceeded. Try again shortly." }, 429, { "retry-after": String(rl.retryAfterSec ?? 60) });
+      }
+    }
 
     try {
       const fetchImpl = env.BLACKLIGHT_FIXTURE === "1" ? (await import("./fixture")).fixtureFetch() : undefined;
