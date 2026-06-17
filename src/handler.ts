@@ -14,7 +14,7 @@
 import { fetchRepoFiles, FetchError } from "@intentius/chant/audit/fetch";
 import { classifyFiles, type DetectPlugin } from "@intentius/chant/audit/discover";
 import { auditFiles, type AuditLexicon } from "@intentius/chant/audit/core";
-import { buildReportJson } from "@intentius/chant/audit/report-model";
+import { buildReportModel } from "@intentius/chant/audit/report-model";
 import type { PostSynthCheck } from "@intentius/chant/lint/post-synth";
 
 import { detectTemplate as detectK8s } from "@intentius/chant-lexicon-k8s/detect";
@@ -111,9 +111,17 @@ export default {
       const files = await fetchRepoFiles(target, { token: env.GIT_TOKEN });
       const inputs = classifyFiles(files, DETECTORS);
       const findings = await auditFiles(inputs, { checksProvider });
-      const report = buildReportJson(findings, { toolVersion: "blacklight" });
+      // The model (not the flat JSON) carries the quick-win fix diffs the UI leads with.
+      const model = buildReportModel(findings, { files: inputs.map((i) => ({ path: i.path, content: i.content })) });
       await bumpCount(env);
-      return json(report);
+      return json({
+        target,
+        counts: model.counts,
+        quickWins: model.quickWins,
+        needsReview: model.needsReview,
+        reportOnly: model.reportOnly,
+        scanned: files.length,
+      });
     } catch (err) {
       // Allowlist / parse / cap failures are user-facing 4xx; anything else 502.
       const msg = err instanceof Error ? err.message : String(err);
