@@ -63,7 +63,7 @@ export function App() {
         </button>
       </form>
 
-      <p class="trust">read-only · we never store your code · github / gitlab / codeberg only</p>
+      <p class="trust">read-only · we never store your code · audits CI, IaC &amp; manifests · fetches from github, gitlab &amp; codeberg</p>
 
       {state.kind === "idle" && (
         <p class="samples">
