@@ -1,0 +1,30 @@
+{
+  "name": "blacklight",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Blacklight — paste a repo URL, see the misconfigurations hiding in your infra. A hosted chant audit.",
+  "scripts": {
+    "dev": "wrangler dev --port 8787 --local",
+    "bundle": "wrangler deploy --dry-run --outdir dist",
+    "deploy": "wrangler deploy",
+    "tsc": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@intentius/chant": "file:/Users/alex/Documents/checkouts/intentius/chant/packages/core",
+    "@intentius/chant-lexicon-aws": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/aws",
+    "@intentius/chant-lexicon-azure": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/azure",
+    "@intentius/chant-lexicon-docker": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/docker",
+    "@intentius/chant-lexicon-forgejo": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/forgejo",
+    "@intentius/chant-lexicon-gcp": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/gcp",
+    "@intentius/chant-lexicon-github": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/github",
+    "@intentius/chant-lexicon-gitlab": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/gitlab",
+    "@intentius/chant-lexicon-helm": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/helm",
+    "@intentius/chant-lexicon-k8s": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/k8s"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260617.1",
+    "typescript": "^5.6.0",
+    "wrangler": "^4"
+  }
+}

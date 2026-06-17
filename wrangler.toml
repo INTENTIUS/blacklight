@@ -1,0 +1,13 @@
+name = "blacklight"
+main = "src/handler.ts"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Server-side git token (lifts rate limits, resolves action SHAs/image digests).
+# Set with: wrangler secret put GIT_TOKEN
+# [vars] GIT_TOKEN is a secret, not a plain var.
+
+# Anonymous audit counter (KV) — wired in #357 alongside rate limiting.
+# [[kv_namespaces]]
+# binding = "STATS"
+# id = "…"
