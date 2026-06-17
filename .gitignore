@@ -2,3 +2,5 @@ node_modules/
 dist/
 .wrangler/
 *.log
+node_modules/
+e2e/context/

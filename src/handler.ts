@@ -68,6 +68,8 @@ interface Env {
   GIT_TOKEN?: string;
   /** Anonymous audit counter — wired in #357. */
   STATS?: KVNamespace;
+  /** Test-only: "1" serves a baked fixture repo (hermetic E2E, no network). */
+  BLACKLIGHT_FIXTURE?: string;
 }
 
 const CORS = {
@@ -108,7 +110,8 @@ export default {
     if (!target) return json({ error: "Missing url" }, 400);
 
     try {
-      const files = await fetchRepoFiles(target, { token: env.GIT_TOKEN });
+      const fetchImpl = env.BLACKLIGHT_FIXTURE === "1" ? (await import("./fixture")).fixtureFetch() : undefined;
+      const files = await fetchRepoFiles(target, { token: env.GIT_TOKEN, fetchImpl });
       const inputs = classifyFiles(files, DETECTORS);
       const findings = await auditFiles(inputs, { checksProvider });
       // The model (not the flat JSON) carries the quick-win fix diffs the UI leads with.
