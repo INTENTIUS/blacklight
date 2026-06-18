@@ -19,6 +19,7 @@ import type { PostSynthCheck } from "@intentius/chant/lint/post-synth";
 import { checkLimits } from "./limit";
 import { verifyTurnstile } from "./turnstile";
 import { bumpStats, readStats } from "./stats";
+import { uaFetch } from "./ua-fetch";
 
 import { detectTemplate as detectK8s } from "@intentius/chant-lexicon-k8s/detect";
 import { detectTemplate as detectDocker } from "@intentius/chant-lexicon-docker/detect";
@@ -147,7 +148,7 @@ export default {
     }
 
     try {
-      const fetchImpl = env.BLACKLIGHT_FIXTURE === "1" ? (await import("./fixture")).fixtureFetch() : undefined;
+      const fetchImpl = env.BLACKLIGHT_FIXTURE === "1" ? (await import("./fixture")).fixtureFetch() : uaFetch;
       const files = await fetchRepoFiles(target, { token: env.GIT_TOKEN, fetchImpl });
       const inputs = classifyFiles(files, DETECTORS);
       const findings = await auditFiles(inputs, { checksProvider });
