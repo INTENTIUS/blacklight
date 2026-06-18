@@ -3,14 +3,16 @@
 # no host state, no network at audit time. Build context is the repo root.
 FROM node:22-slim
 
-WORKDIR /app
-COPY package.json package-lock.json* ./
+# Run as the non-root `node` user (DKRD012); own the workdir so wrangler/npm can write.
+USER node
+WORKDIR /home/node/app
+COPY --chown=node:node package.json package-lock.json* ./
 RUN npm install --no-fund --no-audit \
   && npm install --no-fund --no-audit --save-dev wrangler@4 @cloudflare/workers-types
 
-COPY src ./src
-COPY wrangler.toml ./
-COPY e2e/check.mjs ./e2e/check.mjs
+COPY --chown=node:node src ./src
+COPY --chown=node:node wrangler.toml ./
+COPY --chown=node:node e2e/check.mjs ./e2e/check.mjs
 
 # Boot the worker in fixture mode, wait for it, run the E2E assertions.
 CMD set -e; \
