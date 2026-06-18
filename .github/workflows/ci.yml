@@ -1,0 +1,59 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: "true"
+  WRANGLER_SEND_METRICS: "false"
+
+jobs:
+  # Fast gate: worker + SPA typecheck, unit/render tests, edge bundle (mirrors `just check`).
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm --prefix web ci
+      - name: typecheck (worker)
+        run: npx tsc --noEmit
+      - name: typecheck (web)
+        run: npm --prefix web run tsc
+      - name: unit tests (worker)
+        run: npm test
+      - name: render tests (web)
+        run: npm --prefix web test
+      - name: edge bundle
+        run: npx wrangler deploy --dry-run --outdir dist
+
+  # Browser E2E: headless Chromium drives the SPA against the worker (fixture mode).
+  e2e-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm --prefix web ci
+      - run: npm --prefix web exec -- playwright install --with-deps chromium
+      - run: npm --prefix web run e2e:browser
+
+  # Clean-room E2E: install Blacklight from npm in a container, boot the worker on
+  # workerd, run the full audit pipeline offline. (Docker preinstalled on ubuntu.)
+  e2e-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash e2e/run.sh
