@@ -1,17 +1,16 @@
-# Clean-room E2E: install Blacklight from scratch, boot the worker on workerd in
-# fixture mode, and run the audit pipeline end-to-end — no host state, no network.
-#
-# Build context is e2e/context/ (staged by run.sh): the blacklight repo plus
-# vendored chant tarballs (npm pack), so the file: dev deps are replaced by a
-# real registry-style install. This doubles as the publish/clean-install check.
+# Clean-room E2E: install Blacklight from npm (published @intentius/chant), boot
+# the worker on workerd in fixture mode, and run the audit pipeline end-to-end —
+# no host state, no network at audit time. Build context is the repo root.
 FROM node:22-slim
 
 WORKDIR /app
-COPY . ./
-
-# Install the vendored @intentius tarballs + dev tooling, clean room.
-RUN npm install --no-fund --no-audit ./vendor/*.tgz \
+COPY package.json package-lock.json* ./
+RUN npm install --no-fund --no-audit \
   && npm install --no-fund --no-audit --save-dev wrangler@4 @cloudflare/workers-types
+
+COPY src ./src
+COPY wrangler.toml ./
+COPY e2e/check.mjs ./e2e/check.mjs
 
 # Boot the worker in fixture mode, wait for it, run the E2E assertions.
 CMD set -e; \
