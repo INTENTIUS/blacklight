@@ -3,11 +3,9 @@ main = "src/handler.ts"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Public URL. wrangler provisions the DNS record + edge cert on deploy, as long
-# as the intentius.io zone lives in this same Cloudflare account.
-[[routes]]
-pattern = "blacklight.intentius.io"
-custom_domain = true
+# Served at blacklight.intentius.workers.dev (worker name + the account's
+# workers.dev subdomain). A custom domain (blacklight.intentius.io) needs the
+# intentius.io zone on Cloudflare — deferred; see issue #1.
 
 # The SPA is served from this same Worker via Static Assets, but only at deploy
 # time (`wrangler deploy --assets ./web/dist`) — keeping it out of the base
