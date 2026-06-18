@@ -35,6 +35,18 @@ describe("ReportView (tier-first)", () => {
   test("links findings back to the rule reference", () => {
     expect(html).toContain("audit-rules/#gha033");
   });
+
+  test("shows tier counts and download buttons", () => {
+    expect(html).toContain("quick wins");
+    expect(html).toContain("report-only");
+    expect(html).toContain("Markdown");
+    expect(html).toContain("JSON");
+  });
+
+  test("report-only tier is open so every finding is visible", () => {
+    // the <details> for report-only carries `open`
+    expect(html).toMatch(/<details[^>]*\bopen\b[^>]*>[\s\S]*Report-only/);
+  });
 });
 
 describe("App", () => {
