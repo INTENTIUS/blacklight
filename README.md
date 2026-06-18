@@ -23,6 +23,26 @@ just e2e-browser    # Playwright browser E2E
 Fixture mode (`BLACKLIGHT_FIXTURE=1`) serves a baked multi-lexicon repo for any
 URL, so the whole stack runs offline with no token.
 
+## Deploy
+
+One Worker serves **both** the SPA and the `/audit` API via Cloudflare **Static
+Assets** — no separate Pages project, same origin (so the SPA calls `/audit`
+relative; no `VITE_API_BASE` or CORS needed). Assets are kept out of the base
+`wrangler.toml` so `wrangler dev` / CI don't need a built `web/dist`; they're
+passed at deploy time.
+
+Cloudflare **Workers Builds** (dashboard → connect repo) config:
+
+| Field | Value |
+|---|---|
+| Root directory | `/` |
+| Build command | `npm ci && npm --prefix web ci && npm --prefix web run build` |
+| Deploy command | `npx wrangler deploy --assets ./web/dist` |
+
+Then, in the Worker's settings, add (all optional — off by default):
+`GIT_TOKEN` (secret), `TURNSTILE_SECRET` (secret), and a KV namespace bound as
+`STATS` — see below.
+
 ## Security & abuse controls (#357)
 
 All edge-side; the audit engine adds the SSRF base (chant `fetch.ts`).

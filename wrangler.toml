@@ -3,12 +3,9 @@ main = "src/handler.ts"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Serve the built SPA from this same Worker (no separate Pages project).
-# Static assets are served first; POST /audit (no matching asset) hits the Worker.
-# Unmatched GET paths fall back to index.html (single-page app).
-[assets]
-directory = "./web/dist"
-not_found_handling = "single-page-application"
+# The SPA is served from this same Worker via Static Assets, but only at deploy
+# time (`wrangler deploy --assets ./web/dist`) — keeping it out of the base
+# config so `wrangler dev` / CI don't require a built web/dist. See README.
 
 # Server-side git token (lifts rate limits, resolves action SHAs/image digests).
 # Set with: wrangler secret put GIT_TOKEN
