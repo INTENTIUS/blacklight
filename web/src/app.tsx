@@ -121,6 +121,10 @@ export function App() {
       )}
 
       {state.kind === "result" && state.report.counts.total > 0 && <ReportView report={state.report} />}
+
+      <footer class="foot">
+        powered by <a href="https://intentius.io/chant/cli/audit/" target="_blank" rel="noreferrer">chant audit</a>
+      </footer>
     </div>
   );
 }

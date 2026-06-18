@@ -56,4 +56,10 @@ describe("App", () => {
     expect(html).toContain("we never store your code");
     expect(html).toContain("actions/checkout");
   });
+
+  test("footer credits chant audit with a link to the docs", () => {
+    const html = renderToString(<App />);
+    expect(html).toContain("powered by");
+    expect(html).toContain("intentius.io/chant/cli/audit");
+  });
 });
