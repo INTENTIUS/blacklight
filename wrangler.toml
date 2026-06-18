@@ -15,7 +15,8 @@ compatibility_flags = ["nodejs_compat"]
 # Set with: wrangler secret put GIT_TOKEN
 # [vars] GIT_TOKEN is a secret, not a plain var.
 
-# Anonymous audit counter (KV) — wired in #357 alongside rate limiting.
-# [[kv_namespaces]]
-# binding = "STATS"
-# id = "…"
+# Anonymous audit counter + per-IP/global rate limiting (#357). Bound by config
+# so Workers Builds picks it up on deploy — no dashboard step.
+[[kv_namespaces]]
+binding = "STATS"
+id = "a9d537a35aab42b19acd1f22787535a0"
