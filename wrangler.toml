@@ -3,6 +3,10 @@ main = "src/handler.ts"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
 
+# The SPA is served from this same Worker via Static Assets, but only at deploy
+# time (`wrangler deploy --assets ./web/dist`) — keeping it out of the base
+# config so `wrangler dev` / CI don't require a built web/dist. See README.
+
 # Server-side git token (lifts rate limits, resolves action SHAs/image digests).
 # Set with: wrangler secret put GIT_TOKEN
 # [vars] GIT_TOKEN is a secret, not a plain var.
