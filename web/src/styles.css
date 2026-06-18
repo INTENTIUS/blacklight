@@ -38,6 +38,11 @@ header h1::before { content: "◐ "; color: var(--accent); }
 .target { color: var(--muted); }
 .headline { font-size: 19px; margin: 8px 0 12px; }
 .cat-security { color: var(--err); font-weight: 600; }
+.tiers-line { font-size: 13px; margin: 4px 0 12px; }
+.head-actions { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.downloads { display: flex; gap: 6px; }
+.dl { background: var(--panel); border: 1px solid var(--line); color: var(--fg); padding: 4px 11px; border-radius: 7px; font-size: 12.5px; cursor: pointer; }
+.dl:hover { border-color: var(--accent); }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { background: var(--panel); border: 1px solid var(--line); color: var(--muted); padding: 4px 11px; border-radius: 999px; font-size: 12.5px; cursor: pointer; }
 .chip.on { border-color: var(--accent); color: var(--fg); }
@@ -69,3 +74,4 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; }
 .stats { color: var(--accent); font-size: 13px; margin: 6px 0 0; letter-spacing: 0.2px; }
+.foot { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; text-align: center; }

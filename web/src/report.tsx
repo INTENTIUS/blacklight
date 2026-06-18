@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import type { Category, GuidanceCluster, QuickWinFile, Report, RuleMeta, Finding } from "./types";
 import { ruleDocUrl } from "./types";
+import { downloadMarkdown, downloadJson } from "./download";
 
 const CATS: Category[] = ["security", "correctness", "best-practice"];
 
@@ -86,7 +87,7 @@ function NeedsReview({ clusters }: { clusters: GuidanceCluster[] }) {
 function ReportOnly({ findings }: { findings: Finding[] }) {
   if (!findings.length) return null;
   return (
-    <details class="tier">
+    <details class="tier" open>
       <summary>📋 Report-only <span class="muted">hygiene — {findings.length}</span></summary>
       <table>
         <thead><tr><th>Rule</th><th>Title</th><th>File</th><th>Detail</th></tr></thead>
@@ -123,13 +124,22 @@ export function ReportView({ report }: { report: Report }) {
           {c.total} finding{c.total === 1 ? "" : "s"} —{" "}
           <span class="cat-security">{c.security} security</span>, {c.correctness} correctness, {c.bestPractice} best-practice
         </div>
-        <div class="chips">
-          <button class={cat === "all" ? "chip on" : "chip"} onClick={() => setCat("all")}>all {c.total}</button>
-          {CATS.map((k) => (
-            <button class={cat === k ? "chip on" : "chip"} onClick={() => setCat(k)}>
-              {k} {k === "security" ? c.security : k === "correctness" ? c.correctness : c.bestPractice}
-            </button>
-          ))}
+        <div class="tiers-line muted">
+          {c.quickWin} quick wins · {c.needsReview} needs review · {c.reportOnly} report-only
+        </div>
+        <div class="head-actions">
+          <div class="chips">
+            <button class={cat === "all" ? "chip on" : "chip"} onClick={() => setCat("all")}>all {c.total}</button>
+            {CATS.map((k) => (
+              <button class={cat === k ? "chip on" : "chip"} onClick={() => setCat(k)}>
+                {k} {k === "security" ? c.security : k === "correctness" ? c.correctness : c.bestPractice}
+              </button>
+            ))}
+          </div>
+          <div class="downloads">
+            <button class="dl" onClick={() => downloadMarkdown(report)}>⬇ Markdown</button>
+            <button class="dl" onClick={() => downloadJson(report)}>⬇ JSON</button>
+          </div>
         </div>
       </div>
       <QuickWins files={quickWins} />
