@@ -33,8 +33,9 @@ down:
 bundle:
     npx wrangler deploy --dry-run --outdir dist
 
-# Typecheck the SPA (the worker is validated by `just bundle`).
+# Typecheck the worker + SPA. (chant ships .d.ts since 0.8.0, so worker tsc is clean.)
 tsc:
+    npx tsc --noEmit
     npm --prefix web run tsc
 
 # Unit tests — worker (limit/turnstile/ssrf) + SPA (render).

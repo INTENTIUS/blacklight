@@ -14,16 +14,16 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@intentius/chant": "file:/Users/alex/Documents/checkouts/intentius/chant/packages/core",
-    "@intentius/chant-lexicon-aws": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/aws",
-    "@intentius/chant-lexicon-azure": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/azure",
-    "@intentius/chant-lexicon-docker": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/docker",
-    "@intentius/chant-lexicon-forgejo": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/forgejo",
-    "@intentius/chant-lexicon-gcp": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/gcp",
-    "@intentius/chant-lexicon-github": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/github",
-    "@intentius/chant-lexicon-gitlab": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/gitlab",
-    "@intentius/chant-lexicon-helm": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/helm",
-    "@intentius/chant-lexicon-k8s": "file:/Users/alex/Documents/checkouts/intentius/chant/lexicons/k8s"
+    "@intentius/chant": "^0.8.0",
+    "@intentius/chant-lexicon-aws": "^0.8.0",
+    "@intentius/chant-lexicon-azure": "^0.8.0",
+    "@intentius/chant-lexicon-docker": "^0.8.0",
+    "@intentius/chant-lexicon-forgejo": "^0.8.0",
+    "@intentius/chant-lexicon-gcp": "^0.8.0",
+    "@intentius/chant-lexicon-github": "^0.8.0",
+    "@intentius/chant-lexicon-gitlab": "^0.8.0",
+    "@intentius/chant-lexicon-helm": "^0.8.0",
+    "@intentius/chant-lexicon-k8s": "^0.8.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260617.1",
