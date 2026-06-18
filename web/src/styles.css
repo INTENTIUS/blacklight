@@ -68,3 +68,4 @@ header h1::before { content: "◐ "; color: var(--accent); }
 table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; }
+.stats { color: var(--accent); font-size: 13px; margin: 6px 0 0; letter-spacing: 0.2px; }

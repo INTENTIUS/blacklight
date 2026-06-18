@@ -22,6 +22,12 @@ type State =
 export function App() {
   const [url, setUrl] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
+  const [stats, setStats] = useState<{ audits: number; findings: number } | null>(null);
+
+  // Live anonymous counter for the "active" feel — hidden until any audits exist.
+  useEffect(() => {
+    fetch(`${API}/stats`).then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => {});
+  }, []);
 
   // Load the Turnstile widget only when a sitekey is configured (prod). Dev /
   // fixture / E2E have none, so this is a no-op and the gate is skipped.
@@ -62,6 +68,9 @@ export function App() {
       <header>
         <h1>blacklight</h1>
         <p class="tag">Paste a repo URL. See what's hiding in your infra.</p>
+        {stats && stats.audits > 0 && (
+          <p class="stats">{stats.audits.toLocaleString()} repos audited · {stats.findings.toLocaleString()} findings surfaced</p>
+        )}
       </header>
 
       <form

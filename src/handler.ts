@@ -18,6 +18,7 @@ import { buildReportModel } from "@intentius/chant/audit/report-model";
 import type { PostSynthCheck } from "@intentius/chant/lint/post-synth";
 import { checkLimits } from "./limit";
 import { verifyTurnstile } from "./turnstile";
+import { bumpStats, readStats } from "./stats";
 
 import { detectTemplate as detectK8s } from "@intentius/chant-lexicon-k8s/detect";
 import { detectTemplate as detectDocker } from "@intentius/chant-lexicon-docker/detect";
@@ -98,17 +99,6 @@ function corsHeaders(env: Env, req: Request): Record<string, string> {
   };
 }
 
-/** Best-effort anonymous tally — no repo identity, ever. Real impl lands with #357. */
-async function bumpCount(env: Env): Promise<void> {
-  if (!env.STATS) return;
-  try {
-    const n = Number((await env.STATS.get("audits")) ?? "0") + 1;
-    await env.STATS.put("audits", String(n));
-  } catch {
-    // counting is best-effort; never fail an audit over it
-  }
-}
-
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
@@ -119,6 +109,9 @@ export default {
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     if (req.method === "GET" && url.pathname === "/") {
       return json({ ok: true, service: "blacklight", audit: "POST /audit { url }" });
+    }
+    if (req.method === "GET" && url.pathname === "/stats") {
+      return json(env.STATS ? await readStats(env.STATS) : { audits: 0, findings: 0 });
     }
     if (req.method !== "POST" || url.pathname !== "/audit") return json({ error: "Not found" }, 404);
 
@@ -160,7 +153,13 @@ export default {
       const findings = await auditFiles(inputs, { checksProvider });
       // The model (not the flat JSON) carries the quick-win fix diffs the UI leads with.
       const model = buildReportModel(findings, { files: inputs.map((i) => ({ path: i.path, content: i.content })) });
-      await bumpCount(env);
+      if (env.STATS) {
+        try {
+          await bumpStats(env.STATS, findings.length);
+        } catch {
+          // counting is best-effort; never fail an audit over it
+        }
+      }
       return json({
         target,
         counts: model.counts,
