@@ -72,18 +72,31 @@ interface Env {
   STATS?: KVNamespace;
   /** Turnstile secret — when set, every audit requires a valid challenge token. */
   TURNSTILE_SECRET?: string;
+  /** Comma-separated allowed origins for cross-origin calls. Unset = same-origin
+   *  only (the SPA is served by this Worker, so no CORS is needed by default). */
+  ALLOWED_ORIGIN?: string;
   /** Test-only: "1" serves a baked fixture repo (hermetic E2E, no network). */
   BLACKLIGHT_FIXTURE?: string;
 }
 
-const CORS = {
-  "access-control-allow-origin": "*", // TODO: lock to the Pages origin once the domain is wired
-  "access-control-allow-methods": "POST, GET, OPTIONS",
-  "access-control-allow-headers": "content-type",
-};
-
-const json = (body: unknown, status = 200, extra: Record<string, string> = {}): Response =>
-  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...CORS, ...extra } });
+/**
+ * CORS headers — empty unless ALLOWED_ORIGIN is configured and the request's
+ * Origin matches (or `*`). The SPA is same-origin, so by default we send no CORS
+ * headers, which means other sites' browsers can't call /audit. (#2)
+ */
+function corsHeaders(env: Env, req: Request): Record<string, string> {
+  const allowed = env.ALLOWED_ORIGIN;
+  if (!allowed) return {};
+  const origin = req.headers.get("origin") ?? "";
+  const match = allowed === "*" ? "*" : allowed.split(",").map((s) => s.trim()).includes(origin) ? origin : "";
+  if (!match) return {};
+  return {
+    "access-control-allow-origin": match,
+    "access-control-allow-methods": "POST, GET, OPTIONS",
+    "access-control-allow-headers": "content-type",
+    vary: "origin",
+  };
+}
 
 /** Best-effort anonymous tally — no repo identity, ever. Real impl lands with #357. */
 async function bumpCount(env: Env): Promise<void> {
@@ -99,7 +112,11 @@ async function bumpCount(env: Env): Promise<void> {
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
-    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+    const cors = corsHeaders(env, req);
+    const json = (body: unknown, status = 200, extra: Record<string, string> = {}): Response =>
+      new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...cors, ...extra } });
+
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     if (req.method === "GET" && url.pathname === "/") {
       return json({ ok: true, service: "blacklight", audit: "POST /audit { url }" });
     }
