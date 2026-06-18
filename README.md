@@ -3,7 +3,7 @@
 Paste a repo URL, see the misconfigurations hiding in your infra. A hosted
 [chant audit](https://intentius.io/chant/cli/audit/) — Cloudflare Worker + Pages.
 
-Live at **[blacklight.intentius.workers.dev](https://blacklight.intentius.workers.dev)**.
+Live at **[blacklight.intentius.io](https://blacklight.intentius.io)** (redirects to the canonical `blacklight.intentius.workers.dev`).
 
 - **Worker** (`src/handler.ts`): `POST /audit { url }` → fetch the repo tree →
   detect lexicons → run the security/correctness/best-practice checks →
