@@ -14,16 +14,16 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@intentius/chant": "^0.8.1",
-    "@intentius/chant-lexicon-aws": "^0.8.1",
-    "@intentius/chant-lexicon-azure": "^0.8.1",
-    "@intentius/chant-lexicon-docker": "^0.8.1",
-    "@intentius/chant-lexicon-forgejo": "^0.8.1",
-    "@intentius/chant-lexicon-gcp": "^0.8.1",
-    "@intentius/chant-lexicon-github": "^0.8.1",
-    "@intentius/chant-lexicon-gitlab": "^0.8.1",
-    "@intentius/chant-lexicon-helm": "^0.8.1",
-    "@intentius/chant-lexicon-k8s": "^0.8.1"
+    "@intentius/chant": "^0.13.1",
+    "@intentius/chant-lexicon-aws": "^0.13.1",
+    "@intentius/chant-lexicon-azure": "^0.13.1",
+    "@intentius/chant-lexicon-docker": "^0.13.1",
+    "@intentius/chant-lexicon-forgejo": "^0.13.1",
+    "@intentius/chant-lexicon-gcp": "^0.13.1",
+    "@intentius/chant-lexicon-github": "^0.13.1",
+    "@intentius/chant-lexicon-gitlab": "^0.13.1",
+    "@intentius/chant-lexicon-helm": "^0.13.1",
+    "@intentius/chant-lexicon-k8s": "^0.13.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260617.1",
