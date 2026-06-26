@@ -3,6 +3,7 @@ import { renderToString } from "preact-render-to-string";
 import { ReportView } from "./report";
 import { App } from "./app";
 import { SAMPLE } from "./sample";
+import { reportToLLMContext } from "./download";
 
 describe("ReportView (tier-first)", () => {
   const html = renderToString(<ReportView report={SAMPLE} />);
@@ -41,11 +42,44 @@ describe("ReportView (tier-first)", () => {
     expect(html).toContain("report-only");
     expect(html).toContain("Markdown");
     expect(html).toContain("JSON");
+    expect(html).toContain("LLM context");
   });
 
   test("report-only tier is open so every finding is visible", () => {
     // the <details> for report-only carries `open`
     expect(html).toMatch(/<details[^>]*\bopen\b[^>]*>[\s\S]*Report-only/);
+  });
+});
+
+describe("reportToLLMContext", () => {
+  const ctx = reportToLLMContext(SAMPLE);
+
+  test("produces a non-empty block for a report with findings", () => {
+    expect(ctx.length).toBeGreaterThan(0);
+  });
+
+  test("includes the target repo URL", () => {
+    expect(ctx).toContain(SAMPLE.target);
+  });
+
+  test("groups rules by lexicon heading", () => {
+    expect(ctx).toContain("## GitHub Actions");
+  });
+
+  test("includes rule IDs with remediation text", () => {
+    expect(ctx).toContain("GHA033");
+    expect(ctx).toContain("GHA036");
+    // k8s finding from report-only
+    expect(ctx).toContain("WK8101");
+  });
+
+  test("includes a kubernetes section for cross-lexicon findings", () => {
+    expect(ctx).toContain("## Kubernetes");
+  });
+
+  test("returns empty string for a zero-finding report", () => {
+    const empty = reportToLLMContext({ ...SAMPLE, quickWins: [], needsReview: [], reportOnly: [], counts: { ...SAMPLE.counts, total: 0 } });
+    expect(empty).toBe("");
   });
 });
 

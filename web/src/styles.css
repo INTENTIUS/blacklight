@@ -75,3 +75,6 @@ th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line
 th { color: var(--muted); font-weight: 600; }
 .stats { color: var(--accent); font-size: 13px; margin: 6px 0 0; letter-spacing: 0.2px; }
 .foot { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; text-align: center; }
+.llm-ctx { margin-top: 12px; }
+.llm-hint { color: var(--muted); font-size: 13.5px; margin: 0 0 10px; }
+.llm-pre { background: #010409; border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; font-size: 12.5px; margin: 0; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

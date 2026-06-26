@@ -1,7 +1,7 @@
 import { useState } from "preact/hooks";
 import type { Category, GuidanceCluster, QuickWinFile, Report, RuleMeta, Finding } from "./types";
 import { ruleDocUrl } from "./types";
-import { downloadMarkdown, downloadJson } from "./download";
+import { downloadMarkdown, downloadJson, downloadLLMContext, reportToLLMContext } from "./download";
 
 const CATS: Category[] = ["security", "correctness", "best-practice"];
 
@@ -101,6 +101,32 @@ function ReportOnly({ findings }: { findings: Finding[] }) {
   );
 }
 
+function LLMContext({ report }: { report: Report }) {
+  const ctx = reportToLLMContext(report);
+  if (!ctx) return null;
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    void navigator.clipboard?.writeText(ctx);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <details class="tier">
+      <summary>🤖 LLM context <span class="muted">paste into your system prompt to catch these next time</span></summary>
+      <div class="llm-ctx">
+        <p class="llm-hint">
+          These are the rules that fired on this repo. Add them to your AI coding assistant's system prompt
+          or context window so it flags the same issues before they reach a PR.
+        </p>
+        <div class="diffwrap">
+          <button class="copy" onClick={copy}>{copied ? "copied!" : "copy"}</button>
+          <pre class="llm-pre">{ctx}</pre>
+        </div>
+      </div>
+    </details>
+  );
+}
+
 /** Tier-first result view: quick-wins → needs-review → report-only, with a
  * category headline + filter. CLI reports share this spine. */
 export function ReportView({ report }: { report: Report }) {
@@ -139,12 +165,14 @@ export function ReportView({ report }: { report: Report }) {
           <div class="downloads">
             <button class="dl" onClick={() => downloadMarkdown(report)}>⬇ Markdown</button>
             <button class="dl" onClick={() => downloadJson(report)}>⬇ JSON</button>
+            <button class="dl" onClick={() => downloadLLMContext(report)}>⬇ LLM context</button>
           </div>
         </div>
       </div>
       <QuickWins files={quickWins} />
       <NeedsReview clusters={needsReview} />
       <ReportOnly findings={reportOnly} />
+      <LLMContext report={report} />
     </div>
   );
 }
