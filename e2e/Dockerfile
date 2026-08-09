@@ -6,9 +6,11 @@ FROM node:22-slim
 # Run as the non-root `node` user (DKRD012); own the workdir so wrangler/npm can write.
 USER node
 WORKDIR /home/node/app
+# wrangler + @cloudflare/workers-types come from the repo's own devDependencies
+# (lockfile-pinned). Installing latest wrangler@4 separately broke once its
+# peer range moved to @cloudflare/workers-types v5.
 COPY --chown=node:node package.json package-lock.json* ./
-RUN npm install --no-fund --no-audit \
-  && npm install --no-fund --no-audit --save-dev wrangler@4 @cloudflare/workers-types
+RUN npm install --no-fund --no-audit
 
 COPY --chown=node:node src ./src
 COPY --chown=node:node wrangler.toml ./
