@@ -58,8 +58,7 @@ e2e-browser:
 # Everything CI-relevant right now (no Docker / no browser download).
 check: tsc test bundle
 
-# Deploy worker + SPA. Needs Cloudflare auth; publish chant first (file: deps -> npm).
+# Deploy worker + SPA (one Worker, SPA via Static Assets). Needs Cloudflare auth.
 deploy:
-    npx wrangler deploy
     npm --prefix web run build
-    @echo "TODO: wrangler pages deploy web/dist (after domain wiring)"
+    npx wrangler deploy --assets ./web/dist

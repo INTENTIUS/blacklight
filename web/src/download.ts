@@ -14,21 +14,26 @@ const LEXICON_NAMES: Record<string, string> = {
   azure: "Azure ARM Templates",
   gcp: "Google Cloud",
   helm: "Helm",
-  temporal: "Temporal",
+  fountain: "Fountain",
 };
 
+/** Rule-id prefix → lexicon, per the chant 0.44 catalogs. ARGO and FLUX rules
+ * live in the k8s lexicon; COR/EXT are core's cross-cutting CloudFormation ids. */
 const RULE_PREFIXES: Array<[string, string]> = [
   ["GHA", "github"],
   ["WGL", "gitlab"],
   ["WFJ", "forgejo"],
   ["WK8", "k8s"],
-  ["DKRC", "docker"],
+  ["ARGO", "k8s"],
+  ["FLUX", "k8s"],
   ["DKRD", "docker"],
-  ["AWS", "aws"],
+  ["WAW", "aws"],
+  ["COR", "aws"],
+  ["EXT", "aws"],
   ["AZR", "azure"],
   ["WGC", "gcp"],
   ["WHM", "helm"],
-  ["ARGO", "temporal"],
+  ["FTN", "fountain"],
 ];
 
 function lexiconFromRuleId(id: string): string {
