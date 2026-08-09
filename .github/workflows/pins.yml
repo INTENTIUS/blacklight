@@ -1,0 +1,47 @@
+# Frozen-pin alarm (#20): weekly check that the installed @intentius/* deps
+# still match npm latest. 0.x carets never cross a minor, so drift is silent
+# until something says so — this keeps exactly one tracking issue open while
+# behind (updated in place, never duplicated) and closes it when caught up.
+# Same shape as chant's own lexicon-upgrade cron.
+name: pins
+
+on:
+  schedule:
+    - cron: "23 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: compare installed @intentius/* against npm latest
+        run: |
+          node scripts/pins-drift.mjs > drift.md
+          if [ -s drift.md ]; then echo "drift found:"; cat drift.md; else echo "all current"; fi
+
+      - name: open, update, or close the single tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title="deps: @intentius/* behind npm latest"
+          num=$(gh issue list --state open --json number,title \
+            | jq -r --arg t "$title" '.[] | select(.title == $t) | .number' | head -1)
+          if [ -s drift.md ]; then
+            if [ -n "$num" ]; then
+              gh issue edit "$num" --body-file drift.md
+              echo "updated #$num"
+            else
+              gh issue create --title "$title" --body-file drift.md
+            fi
+          elif [ -n "$num" ]; then
+            gh issue close "$num" --comment "All @intentius/* deps match npm latest again."
+          fi
