@@ -9,6 +9,19 @@ install:
     npm install
     npm --prefix web install
 
+# Your own local blacklight, REAL audits (no fixture, no Cloudflare account).
+# Optional: put GIT_TOKEN=<token> in .dev.vars to lift upstream rate limits.
+dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just down
+    sleep 1
+    nohup npx wrangler dev --port 8787 --local >/tmp/blacklight-worker.log 2>&1 &
+    nohup npm --prefix web run dev -- --port 5173 --strictPort >/tmp/blacklight-vite.log 2>&1 &
+    for i in $(seq 1 45); do curl -sf http://localhost:5173/ >/dev/null 2>&1 && break; sleep 1; done
+    echo "Blacklight up → http://localhost:5173  (worker :8787, live audits)"
+    echo "logs: /tmp/blacklight-worker.log /tmp/blacklight-vite.log · stop: just down"
+
 # Bring the local stack up (worker fixture + Vite) for preview → http://localhost:5173
 up:
     #!/usr/bin/env bash

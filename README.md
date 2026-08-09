@@ -7,7 +7,8 @@ it at a public repo on GitHub, GitLab, or Codeberg and it reads your CI workflow
 Kubernetes manifests, Dockerfiles, Helm charts, and cloud templates, runs a few
 hundred security and correctness checks against them, and hands you a report that
 leads with the fixes you can apply right now, as ready-made diffs. It never stores
-your code, and you don't need an account.
+your code, and you don't need an account. It works on public repos; for private
+code, the same rules run locally — see "Run it on your box".
 
 Live at **[blacklight.intentius.io](https://blacklight.intentius.io)** (redirects
 to the canonical `blacklight.intentius.workers.dev`).
@@ -42,7 +43,10 @@ unparseable URL, repo too large for the caps) with `{"error": "<reason>"}`;
 `403` when the Turnstile bot gate is enabled and no valid token was sent (the
 API path may require solving a challenge in the browser); `429` when rate
 limited, with a `retry-after` header in seconds; `502` for upstream fetch
-failures. Treat non-200 as "no report", not as findings.
+failures. Treat non-200 as "no report", not as findings. A private repo also
+comes back as an error — blacklight only sees what the git host serves
+anonymously. Don't retry; run the same rules locally instead:
+`npx @intentius/chant audit .` in the repo (see "Run it on your box").
 
 **Response shape**:
 
@@ -118,13 +122,64 @@ chant's typed model, so they fire on `chant build` rather than on standalone
 YAML. When chant routes fountain natively, blacklight picks it up without
 changes.
 
+## Run it on your box
+
+Three doors, depending on what you're actually after.
+
+**Your code is private.** Blacklight is deliberately public-URL-only (that's
+what its abuse controls assume), so don't try to feed it a private repo — run
+the same rules locally with the chant CLI. Nothing leaves your machine. The
+rules live in per-format lexicon packages, so name the ones you want (this is
+the full set blacklight runs):
+
+```sh
+npx -p @intentius/chant \
+  -p @intentius/chant-lexicon-github -p @intentius/chant-lexicon-gitlab -p @intentius/chant-lexicon-forgejo \
+  -p @intentius/chant-lexicon-k8s -p @intentius/chant-lexicon-docker -p @intentius/chant-lexicon-aws \
+  -p @intentius/chant-lexicon-azure -p @intentius/chant-lexicon-gcp -p @intentius/chant-lexicon-helm \
+  chant audit .
+```
+
+If the repo already depends on chant and its lexicons, plain
+`npx chant audit .` does the same.
+
+**You want your own blacklight, locally.** Clone and run it — no Cloudflare
+account needed; `wrangler dev --local` emulates everything, including the KV
+binding:
+
+```sh
+git clone https://github.com/INTENTIUS/blacklight && cd blacklight
+just install && just dev     # → http://localhost:5173, real audits
+```
+
+The only secret worth having is an optional `GIT_TOKEN` (a read-only token for
+the git host) in a `.dev.vars` file, which lifts upstream rate limits and lets
+quick-win diffs resolve action SHAs and image digests.
+
+**You want your own hosted instance.** Deploy the same Worker to your own
+Cloudflare account: you get your own `<name>.<account>.workers.dev` URL, your
+own limits, and nothing shared with ours.
+
+```sh
+git clone https://github.com/INTENTIUS/blacklight && cd blacklight
+npx wrangler login
+npx wrangler kv namespace create STATS   # then put its id in wrangler.toml
+npx wrangler deploy
+```
+
+The `STATS` KV id in `wrangler.toml` belongs to our account — swap in the id
+the create command prints (or delete the binding to run without the counter
+and rate limiting). `wrangler.toml`'s `[build]`/`[assets]` do the rest: the
+deploy builds the SPA and ships it with the API.
+
 ## Develop
 
 ```
 just install        # worker + web deps
-just up             # local stack (fixture mode) → http://localhost:5173
+just dev            # local stack, real audits → http://localhost:5173
+just up             # local stack (fixture mode, offline) → http://localhost:5173
 just down
-just check          # tsc + tests + edge bundle
+just check          # tsc + tests + edge bundle + size gate
 just e2e            # hermetic Docker E2E (clean-room, offline)
 just e2e-browser    # Playwright browser E2E
 ```
