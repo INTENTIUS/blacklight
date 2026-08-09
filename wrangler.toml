@@ -15,6 +15,14 @@ compatibility_flags = ["nodejs_compat"]
 # Set with: wrangler secret put GIT_TOKEN
 # [vars] GIT_TOKEN is a secret, not a plain var.
 
+# chant 0.44: azure's post-synth barrel pulls deploy-scopes.ts, which computes
+# dirname(fileURLToPath(import.meta.url)) at module scope. import.meta.url is
+# undefined on workerd, so the worker crashes at startup. Pinning it to a fixed
+# file: URL makes the init succeed; the lexicon-JSON lookup it feeds then misses
+# and AZR030 falls back to resource-group-only scopes (its documented fallback).
+[define]
+"import.meta.url" = "\"file:///worker/handler.js\""
+
 # Anonymous audit counter + per-IP/global rate limiting (#357). Bound by config
 # so Workers Builds picks it up on deploy — no dashboard step.
 [[kv_namespaces]]
