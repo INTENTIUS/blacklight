@@ -15,6 +15,7 @@ import { fetchRepoFiles, FetchError } from "@intentius/chant/audit/fetch";
 import { classifyFiles, type DetectPlugin } from "@intentius/chant/audit/discover";
 import { auditFiles, type AuditLexicon } from "@intentius/chant/audit/core";
 import { buildReportModel } from "@intentius/chant/audit/report-model";
+import { RULE_CATALOG, type RuleMeta } from "@intentius/chant/audit/catalog";
 import type { PostSynthCheck } from "@intentius/chant/lint/post-synth";
 import { checkLimits } from "./limit";
 import { verifyTurnstile } from "./turnstile";
@@ -27,6 +28,7 @@ import { detectTemplate as detectAws } from "@intentius/chant-lexicon-aws/detect
 import { detectTemplate as detectAzure } from "@intentius/chant-lexicon-azure/detect";
 import { detectTemplate as detectGcp } from "@intentius/chant-lexicon-gcp/detect";
 import { detectTemplate as detectHelm } from "@intentius/chant-lexicon-helm/detect";
+import { detectFountainTemplate as detectFountain } from "@intentius/chant-lexicon-fountain/detect";
 
 import { postSynthChecks as githubChecks } from "@intentius/chant-lexicon-github/lint/post-synth";
 import { postSynthChecks as gitlabChecks } from "@intentius/chant-lexicon-gitlab/lint/post-synth";
@@ -37,9 +39,23 @@ import { postSynthChecks as awsChecks } from "@intentius/chant-lexicon-aws/lint/
 import { postSynthChecks as azureChecks } from "@intentius/chant-lexicon-azure/lint/post-synth";
 import { postSynthChecks as gcpChecks } from "@intentius/chant-lexicon-gcp/lint/post-synth";
 import { postSynthChecks as helmChecks } from "@intentius/chant-lexicon-helm/lint/post-synth";
+import { postSynthChecks as fountainChecks } from "@intentius/chant-lexicon-fountain/lint/post-synth";
+
+import { githubAuditCatalog } from "@intentius/chant-lexicon-github/lint/audit-catalog";
+import { gitlabAuditCatalog } from "@intentius/chant-lexicon-gitlab/lint/audit-catalog";
+import { forgejoAuditCatalog } from "@intentius/chant-lexicon-forgejo/lint/audit-catalog";
+import { k8sAuditCatalog } from "@intentius/chant-lexicon-k8s/lint/audit-catalog";
+import { dockerAuditCatalog } from "@intentius/chant-lexicon-docker/lint/audit-catalog";
+import { awsAuditCatalog } from "@intentius/chant-lexicon-aws/lint/audit-catalog";
+import { azureAuditCatalog } from "@intentius/chant-lexicon-azure/lint/audit-catalog";
+import { gcpAuditCatalog } from "@intentius/chant-lexicon-gcp/lint/audit-catalog";
+import { helmAuditCatalog } from "@intentius/chant-lexicon-helm/lint/audit-catalog";
+import { fountainAuditCatalog } from "@intentius/chant-lexicon-fountain/lint/audit-catalog";
 
 /** Detectors for classifyFiles. CI lexicons are path-detected (name only); the
- * rest carry the edge-safe detectTemplate. */
+ * rest carry the edge-safe detectTemplate. Fountain is wired for the day core's
+ * classifier routes to it — at 0.44 fountain.dev/v1 docs match the k8s detector
+ * (apiVersion + kind) and are audited under k8s. */
 const DETECTORS: DetectPlugin[] = [
   { name: "github" },
   { name: "gitlab" },
@@ -50,6 +66,7 @@ const DETECTORS: DetectPlugin[] = [
   { name: "azure", detectTemplate: detectAzure },
   { name: "gcp", detectTemplate: detectGcp },
   { name: "helm", detectTemplate: detectHelm },
+  { name: "fountain", detectTemplate: detectFountain },
 ];
 
 /** Post-synth checks per lexicon (mirrors core's defaultChecksProvider). Forgejo
@@ -64,8 +81,30 @@ const CHECKS: Record<string, PostSynthCheck[]> = {
   azure: azureChecks,
   gcp: gcpChecks,
   helm: helmChecks,
+  fountain: fountainChecks,
 };
 const checksProvider = async (lexicon: AuditLexicon): Promise<PostSynthCheck[]> => CHECKS[lexicon] ?? [];
+
+/**
+ * The effective audit catalog. Since 0.44 (#687) core's static RULE_CATALOG
+ * carries only the cross-cutting COR/EXT ids; every per-lexicon rule's
+ * title/tier/fixKind/category lives in that lexicon's contributed catalog.
+ * Core's `resolveAuditCatalog` merges these via the plugin loader, which is not
+ * edge-safe, so we mirror the merge from the static per-lexicon imports.
+ */
+const CATALOG: Record<string, RuleMeta> = {
+  ...RULE_CATALOG,
+  ...githubAuditCatalog,
+  ...gitlabAuditCatalog,
+  ...forgejoAuditCatalog,
+  ...k8sAuditCatalog,
+  ...dockerAuditCatalog,
+  ...awsAuditCatalog,
+  ...azureAuditCatalog,
+  ...gcpAuditCatalog,
+  ...helmAuditCatalog,
+  ...fountainAuditCatalog,
+};
 
 interface Env {
   /** Server-side git token (secret). */
@@ -153,7 +192,7 @@ export default {
       const inputs = classifyFiles(files, DETECTORS);
       const findings = await auditFiles(inputs, { checksProvider });
       // The model (not the flat JSON) carries the quick-win fix diffs the UI leads with.
-      const model = buildReportModel(findings, { files: inputs.map((i) => ({ path: i.path, content: i.content })) });
+      const model = buildReportModel(findings, { files: inputs.map((i) => ({ path: i.path, content: i.content })), catalog: CATALOG });
       if (env.STATS) {
         try {
           await bumpStats(env.STATS, findings.length);
