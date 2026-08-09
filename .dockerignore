@@ -1,6 +1,9 @@
 node_modules
 dist
 .wrangler
-web
+web/node_modules
+web/dist
+web/test-results
+web/playwright-report
 e2e/context
 *.log
