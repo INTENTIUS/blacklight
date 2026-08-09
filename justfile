@@ -58,7 +58,7 @@ e2e-browser:
 # Everything CI-relevant right now (no Docker / no browser download).
 check: tsc test bundle
 
-# Deploy worker + SPA (one Worker, SPA via Static Assets). Needs Cloudflare auth.
+# Manual deploy override — the normal release is a push to main (Workers Builds).
+# wrangler.toml's [build]/[assets] make the plain command build and attach the SPA.
 deploy:
-    npm --prefix web run build
-    npx wrangler deploy --assets ./web/dist
+    npx wrangler deploy

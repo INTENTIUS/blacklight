@@ -12,7 +12,14 @@ WORKDIR /home/node/app
 COPY --chown=node:node package.json package-lock.json* ./
 RUN npm install --no-fund --no-audit
 
+# The SPA ships with every deploy since #19 (wrangler.toml [build]/[assets]),
+# so the clean-room needs the web app too — wrangler dev builds it at startup
+# and the e2e asserts the worker serves it.
+COPY --chown=node:node web/package.json web/package-lock.json* ./web/
+RUN npm --prefix web install --no-fund --no-audit
+
 COPY --chown=node:node src ./src
+COPY --chown=node:node web ./web
 COPY --chown=node:node wrangler.toml ./
 COPY --chown=node:node e2e/check.mjs ./e2e/check.mjs
 

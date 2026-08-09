@@ -13,6 +13,13 @@ function assert(cond, msg) {
   console.log("✓ " + msg);
 }
 
+// #19: every deploy path carries the SPA (wrangler.toml [build]/[assets]), so
+// the worker must serve it at / — a JSON body here means assets were dropped.
+const home = await fetch(`${base}/`);
+assert(home.ok, `GET / returned ${home.status}`);
+const homeBody = await home.text();
+assert(homeBody.includes("<!doctype html>") || homeBody.includes("<div id=\"app\">"), "GET / serves the SPA, not a bare worker");
+
 const res = await fetch(`${base}/audit`, {
   method: "POST",
   headers: { "content-type": "application/json" },

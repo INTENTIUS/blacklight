@@ -89,8 +89,8 @@ automatically, surface the rest. `category` says what kind of problem it is
 Each rule is documented at
 `https://intentius.io/chant/lint-rules/audit-rules/#<id-lowercase>`.
 
-**Also available**: `GET /` returns service metadata, `GET /stats` returns
-anonymous totals `{"audits": n, "findings": n}`.
+**Also available**: `GET /stats` returns anonymous totals
+`{"audits": n, "findings": n}`. (`GET /` serves the SPA.)
 
 ## What it covers
 
@@ -136,13 +136,15 @@ URL, so the whole stack runs offline with no token.
 
 One Worker serves **both** the SPA and the `/audit` API via Cloudflare **Static
 Assets** — no separate Pages project, same origin (so the SPA calls `/audit`
-relative; no `VITE_API_BASE` and no cross-origin CORS). Assets stay out of the
-base `wrangler.toml` so `wrangler dev` / CI don't need a built `web/dist`; the
-deploy passes `--assets ./web/dist`.
+relative; no `VITE_API_BASE` and no cross-origin CORS). `wrangler.toml` carries
+the whole story: a `[build]` command that installs and builds the SPA, and an
+`[assets]` directory pointing at `web/dist`. That makes plain
+`npx wrangler deploy` self-sufficient — every deploy path builds the SPA and
+attaches it, no flags to remember.
 
-Continuous deploys run through **Cloudflare Workers Builds** on push to `main`.
-Manual deploys are `just deploy` (builds the SPA, then
-`wrangler deploy --assets ./web/dist`; needs `wrangler whoami` to show an
+**Push to `main` is the release.** Cloudflare Workers Builds picks up the push
+and runs the plain deploy. `just deploy` is the manual override — the same
+`npx wrangler deploy`, from your machine (needs `wrangler whoami` to show an
 authenticated account).
 
 Optional runtime config in the Worker's settings (all off by default):

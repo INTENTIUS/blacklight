@@ -7,9 +7,17 @@ compatibility_flags = ["nodejs_compat"]
 # workers.dev subdomain). A custom domain (blacklight.intentius.io) needs the
 # intentius.io zone on Cloudflare — deferred; see issue #1.
 
-# The SPA is served from this same Worker via Static Assets, but only at deploy
-# time (`wrangler deploy --assets ./web/dist`) — keeping it out of the base
-# config so `wrangler dev` / CI don't require a built web/dist. See README.
+# The SPA is served from this same Worker via Static Assets, declared here so
+# EVERY deploy path carries it — Workers Builds' plain `npx wrangler deploy`
+# included. The [build] command produces web/dist before wrangler bundles, so a
+# fresh clone (Workers Builds' container, the clean-room e2e image) needs no
+# extra flags or dashboard config. Requests that match an asset are served from
+# web/dist; everything else (/audit, /stats) falls through to the worker. (#19)
+[build]
+command = "npm --prefix web install --no-fund --no-audit && npm --prefix web run build"
+
+[assets]
+directory = "./web/dist"
 
 # Server-side git token (lifts rate limits, resolves action SHAs/image digests).
 # Set with: wrangler secret put GIT_TOKEN
