@@ -39,6 +39,8 @@ jobs:
         run: npm --prefix web test
       - name: edge bundle
         run: npx wrangler deploy --dry-run --outdir dist
+      - name: bundle size gate (fail > 2.6 MiB gzip, warn > 2.3)
+        run: node scripts/bundle-gate.mjs dist/handler.js
 
   # Dogfood: audit our own repo with chant — the tool must pass its own checks.
   dogfood-audit:

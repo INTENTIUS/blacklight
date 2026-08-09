@@ -1,0 +1,55 @@
+# Live canary (#20): nothing watched production between releases. Probes the
+# deployed Worker daily — a red run is the pager. No secrets, no checkout.
+# NOTE: the /audit probe sends no Turnstile token; if TURNSTILE_SECRET is ever
+# enabled on the Worker, expect 403 here and teach the canary a token first.
+name: canary
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  BASE: https://blacklight.intentius.workers.dev
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: GET / serves the SPA
+        run: |
+          body=$(curl -sf --max-time 30 "$BASE/")
+          echo "$body" | grep -qi "<!doctype html>" || { echo "::error::/ did not serve the SPA"; exit 1; }
+          echo "ok: / is the SPA"
+
+      - name: GET /stats returns the counters
+        run: |
+          curl -sf --max-time 30 "$BASE/stats" | node -e '
+            let d = "";
+            process.stdin.on("data", (c) => (d += c)).on("end", () => {
+              const s = JSON.parse(d);
+              if (typeof s.audits !== "number" || typeof s.findings !== "number") {
+                console.error("::error::/stats shape is wrong:", d);
+                process.exit(1);
+              }
+              console.log("ok: /stats", d);
+            });'
+
+      - name: POST /audit produces findings
+        run: |
+          curl -sf --max-time 120 -X POST "$BASE/audit" \
+            -H 'content-type: application/json' \
+            -d '{"url":"https://github.com/actions/checkout"}' | node -e '
+            let d = "";
+            process.stdin.on("data", (c) => (d += c)).on("end", () => {
+              const r = JSON.parse(d);
+              if (r.error) { console.error("::error::/audit errored:", r.error); process.exit(1); }
+              if (!(r.counts && r.counts.total >= 1 && r.scanned >= 1)) {
+                console.error("::error::/audit returned no findings — pipeline is broken or the target went pristine");
+                process.exit(1);
+              }
+              console.log("ok: /audit", r.scanned, "files,", r.counts.total, "findings");
+            });'

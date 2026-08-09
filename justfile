@@ -29,9 +29,11 @@ down:
     pkill -f "vite" 2>/dev/null || true
     echo "Blacklight stopped."
 
-# Edge-bundle the worker (dry-run) — the real compile gate (esbuild, no tsc of chant source).
+# Edge-bundle the worker (dry-run) — the real compile gate (esbuild, no tsc of
+# chant source) — then gate its gzip size against Cloudflare's 3 MiB cap.
 bundle:
     npx wrangler deploy --dry-run --outdir dist
+    node scripts/bundle-gate.mjs dist/handler.js
 
 # Typecheck the worker + SPA. (chant ships .d.ts since 0.8.0, so worker tsc is clean.)
 tsc:
