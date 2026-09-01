@@ -36,3 +36,15 @@ directory = "./web/dist"
 [[kv_namespaces]]
 binding = "STATS"
 id = "a9d537a35aab42b19acd1f22787535a0"
+
+# Exact in-flight concurrency cap (#4): one Durable Object instance sheds with
+# 429 when MAX_IN_FLIGHT audits are already running. Advisory — the handler
+# proceeds uncapped if the DO is unavailable. SQLite-backed class (the only
+# kind new migrations may create on the free plan); it uses no storage.
+[[durable_objects.bindings]]
+name = "GATE"
+class_name = "ConcurrencyGate"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ConcurrencyGate"]

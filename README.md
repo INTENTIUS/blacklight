@@ -223,6 +223,12 @@ All edge-side; the audit engine adds the SSRF base (chant `fetch.ts`).
 - **Bot gate** (`src/turnstile.ts`): when `TURNSTILE_SECRET` is set, every audit
   requires a valid Cloudflare Turnstile token (verified server-side, fail-closed).
   The SPA renders the widget when `VITE_TURNSTILE_SITEKEY` is set.
+- **Concurrency cap** (`src/gate.ts`): one Durable Object counts audits in
+  flight exactly and sheds with `429` past `MAX_IN_FLIGHT` — a burst that fits
+  the per-minute budgets still can't pile simultaneous tree-walks onto the
+  shared git token. Advisory: if the DO is unavailable the audit proceeds (the
+  KV breaker still stands). Leaked slots self-heal after `STALE_MS`. Tune both
+  in `src/gate.ts`.
 - **CORS**: same-origin by default (the SPA is served by this Worker), so other
   sites' browsers can't call `/audit`. Set `ALLOWED_ORIGIN` only if the SPA is
   ever hosted on a different origin.
