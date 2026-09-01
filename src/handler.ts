@@ -21,6 +21,11 @@ import { checkLimits } from "./limit";
 import { verifyTurnstile } from "./turnstile";
 import { bumpStats, readStats } from "./stats";
 import { uaFetch } from "./ua-fetch";
+import { ConcurrencyGate } from "./gate";
+
+// The Durable Object class must be exported from the worker entry for the
+// binding/migration to resolve (#4).
+export { ConcurrencyGate };
 
 import { detectTemplate as detectK8s } from "@intentius/chant-lexicon-k8s/detect";
 import { detectTemplate as detectDocker } from "@intentius/chant-lexicon-docker/detect";
@@ -111,6 +116,8 @@ interface Env {
   GIT_TOKEN?: string;
   /** Anonymous audit counter + rate-limit windows (KV). Rate limiting is on when bound. */
   STATS?: KVNamespace;
+  /** Exact in-flight concurrency cap (#4). Advisory: unavailable ⇒ audits proceed. */
+  GATE?: DurableObjectNamespace;
   /** Turnstile secret — when set, every audit requires a valid challenge token. */
   TURNSTILE_SECRET?: string;
   /** Comma-separated allowed origins for cross-origin calls. Unset = same-origin
@@ -186,6 +193,27 @@ export default {
       }
     }
 
+    // Exact in-flight cap (#4) — a burst that fits the per-minute budgets
+    // still can't pile simultaneous tree-walks onto the shared git token.
+    // Advisory by design: a DO error or missing binding never blocks an audit
+    // (the KV breaker above still stands); only an explicit "at capacity"
+    // sheds, with 429.
+    let gate: DurableObjectStub | undefined;
+    let gateToken: string | undefined;
+    if (env.GATE) {
+      try {
+        gate = env.GATE.get(env.GATE.idFromName("global"));
+        const res = await gate.fetch("https://gate/acquire", { method: "POST" });
+        if (res.status === 429) {
+          console.warn(`reject reason=concurrency ip=${ip}`);
+          return json({ error: "Busy — too many audits running. Try again shortly." }, 429, { "retry-after": "10" });
+        }
+        if (res.ok) gateToken = ((await res.json()) as { token?: string }).token;
+      } catch {
+        gate = undefined; // gate unavailable — proceed uncapped
+      }
+    }
+
     try {
       const fetchImpl = env.BLACKLIGHT_FIXTURE === "1" ? (await import("./fixture")).fixtureFetch() : uaFetch;
       const files = await fetchRepoFiles(target, { token: env.GIT_TOKEN, fetchImpl });
@@ -213,6 +241,16 @@ export default {
       const msg = err instanceof Error ? err.message : String(err);
       const status = err instanceof FetchError ? 400 : 502;
       return json({ error: msg }, status);
+    } finally {
+      // Free the slot on every path; a lost release self-heals via the DO's
+      // stale-slot sweep, so failure here is tolerable and never surfaced.
+      if (gate && gateToken) {
+        try {
+          await gate.fetch("https://gate/release", { method: "POST", body: JSON.stringify({ token: gateToken }) });
+        } catch {
+          // reclaimed by the sweep
+        }
+      }
     }
   },
 };
