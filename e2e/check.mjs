@@ -43,6 +43,9 @@ assert(filesAudited.some((f) => f === "Dockerfile"), "audited a Dockerfile");
 // fountain.dev/v1 manifest matches the k8s detector and is audited under k8s.
 // This pins that behavior; it changes when core routes fountain natively.
 assert(filesAudited.some((f) => f === "agents/env.yaml"), "scanned a standalone fountain manifest (as k8s at chant 0.44)");
+// The lexicon-independent nginx family (chant 0.54, #1979) runs on the
+// hosted path — the fixture's nginx/default.conf enables directory listing.
+assert(filesAudited.some((f) => f === "nginx/default.conf"), "audited an nginx config (NGX*)");
 
 const diff = r.quickWins.find((q) => q.diff)?.diff ?? "";
 assert(diff.includes("contents: read"), "quick-win diff carries a real fix");

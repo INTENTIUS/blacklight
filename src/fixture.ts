@@ -16,6 +16,9 @@ export const FIXTURE_FILES: Record<string, string> = {
   // fire on `chant build`. Kept in the fixture so the classification behavior
   // is pinned by e2e and a future chant that routes fountain natively shows up.
   "agents/env.yaml": "apiVersion: fountain.dev/v1\nkind: Environment\nmetadata:\n  name: dev\nspec:\n  image: ubuntu:24.04\n",
+  // nginx config (chant 0.54, NGX* — #1979): directory listing on, so the
+  // hosted path proves the lexicon-independent nginx family fires end to end.
+  "nginx/default.conf": "server {\n  listen 80;\n  location /files {\n    autoindex on;\n  }\n}\n",
 };
 
 /** A GitHub-shaped mock fetch over an in-memory file set. */

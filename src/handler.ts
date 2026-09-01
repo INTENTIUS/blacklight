@@ -13,7 +13,10 @@
  */
 import { fetchRepoFiles, FetchError } from "@intentius/chant/audit/fetch";
 import { classifyFiles, type DetectPlugin } from "@intentius/chant/audit/discover";
-import { auditFiles, type AuditLexicon } from "@intentius/chant/audit/core";
+import { auditFiles, type AuditLexicon, type AuditFinding } from "@intentius/chant/audit/core";
+import { scanForSecrets } from "@intentius/chant/audit/secrets";
+import { auditWranglerConfigs } from "@intentius/chant/audit/wrangler";
+import { auditNginxConfigs } from "@intentius/chant/audit/nginx";
 import { buildReportModel } from "@intentius/chant/audit/report-model";
 import { RULE_CATALOG, type RuleMeta } from "@intentius/chant/audit/catalog";
 import type { PostSynthCheck } from "@intentius/chant/lint/post-synth";
@@ -218,7 +221,17 @@ export default {
       const fetchImpl = env.BLACKLIGHT_FIXTURE === "1" ? (await import("./fixture")).fixtureFetch() : uaFetch;
       const files = await fetchRepoFiles(target, { token: env.GIT_TOKEN, fetchImpl });
       const inputs = classifyFiles(files, DETECTORS);
-      const findings = await auditFiles(inputs, { checksProvider });
+      // Hosted parity with the CLI (#25): the lexicon-independent families run
+      // beside the lexicon checks — secrets over every fetched file's raw text
+      // (SEC*, defaults; no local .chant-audit.json exists on this path),
+      // Wrangler config (WRG*), and nginx config (NGX*, chant #1979). All
+      // pure/edge-safe by construction.
+      const findings: AuditFinding[] = [
+        ...(await auditFiles(inputs, { checksProvider })),
+        ...scanForSecrets(files),
+        ...auditWranglerConfigs(files),
+        ...auditNginxConfigs(files),
+      ];
       // The model (not the flat JSON) carries the quick-win fix diffs the UI leads with.
       const model = buildReportModel(findings, { files: inputs.map((i) => ({ path: i.path, content: i.content })), catalog: CATALOG });
       if (env.STATS) {
