@@ -39,10 +39,10 @@ const filesAudited = [
 assert(filesAudited.some((f) => f.includes(".github/workflows")), "audited a GitHub workflow");
 assert(filesAudited.some((f) => f.endsWith("deploy.yaml")), "audited a k8s manifest");
 assert(filesAudited.some((f) => f === "Dockerfile"), "audited a Dockerfile");
-// chant 0.44 has no fountain content route in classifyFiles: a standalone
-// fountain.dev/v1 manifest matches the k8s detector and is audited under k8s.
-// This pins that behavior; it changes when core routes fountain natively.
-assert(filesAudited.some((f) => f === "agents/env.yaml"), "scanned a standalone fountain manifest (as k8s at chant 0.44)");
+// Since chant 0.54 core routes fountain natively: the standalone
+// fountain.dev/v1 manifest is parsed back into the entity graph and the FTN
+// rules fire on audit — the fixture's credential-shaped env var trips FTN012.
+assert(filesAudited.some((f) => f === "agents/env.yaml"), "audited a standalone fountain manifest (native route since chant 0.54)");
 // The lexicon-independent nginx family (chant 0.54, #1979) runs on the
 // hosted path — the fixture's nginx/default.conf enables directory listing.
 assert(filesAudited.some((f) => f === "nginx/default.conf"), "audited an nginx config (NGX*)");

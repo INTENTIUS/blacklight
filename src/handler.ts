@@ -13,7 +13,8 @@
  */
 import { fetchRepoFiles, FetchError } from "@intentius/chant/audit/fetch";
 import { classifyFiles, type DetectPlugin } from "@intentius/chant/audit/discover";
-import { auditFiles, type AuditLexicon, type AuditFinding } from "@intentius/chant/audit/core";
+import { auditFiles, type AuditLexicon, type AuditFinding, type EntitiesParser } from "@intentius/chant/audit/core";
+import { fountainAuditEntities } from "@intentius/chant-lexicon-fountain/audit-entities";
 import { scanForSecrets } from "@intentius/chant/audit/secrets";
 import { auditWranglerConfigs } from "@intentius/chant/audit/wrangler";
 import { auditNginxConfigs } from "@intentius/chant/audit/nginx";
@@ -92,6 +93,18 @@ const CHECKS: Record<string, PostSynthCheck[]> = {
   fountain: fountainChecks,
 };
 const checksProvider = async (lexicon: AuditLexicon): Promise<PostSynthCheck[]> => CHECKS[lexicon] ?? [];
+
+/**
+ * Parse-to-graph half (chant #1567), mirrored statically like `CHECKS`: core's
+ * default provider loads plugins through `cli/plugins`, which is not
+ * edge-safe — without this, entity-reading checks (fountain's FTN rules over
+ * standalone manifests) silently no-op on the hosted path while firing in the
+ * CLI. fountain is the only lexicon shipping `auditEntities` today.
+ */
+const ENTITIES: Record<string, EntitiesParser> = {
+  fountain: fountainAuditEntities,
+};
+const entitiesProvider = async (lexicon: AuditLexicon): Promise<EntitiesParser | undefined> => ENTITIES[lexicon];
 
 /**
  * The effective audit catalog. Since 0.44 (#687) core's static RULE_CATALOG
@@ -227,7 +240,7 @@ export default {
       // Wrangler config (WRG*), and nginx config (NGX*, chant #1979). All
       // pure/edge-safe by construction.
       const findings: AuditFinding[] = [
-        ...(await auditFiles(inputs, { checksProvider })),
+        ...(await auditFiles(inputs, { checksProvider, entitiesProvider })),
         ...scanForSecrets(files),
         ...auditWranglerConfigs(files),
         ...auditNginxConfigs(files),
